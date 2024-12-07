@@ -8,4 +8,3 @@ def year(request):
         Вщзвращает текущий год.
     """
     return {'year': datetime.now().year}
-
