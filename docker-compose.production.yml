@@ -1,0 +1,23 @@
+version: '3'
+
+volumes:
+  db:
+  static:
+
+services:
+
+  backend:
+    image: rv369/task_treker_backend
+    volumes: 
+      - db:/app/db/
+      - static:/backend_static/
+
+  gateway:
+    image: rv369/task_treker_gateway
+    volumes:
+      - static:/staticfiles/
+    ports:
+      - 8000:80
+    depends_on:
+      - backend
+    restart: always

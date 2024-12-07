@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load user_filters %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+{% block title %}Задачи{% endblock title %}
+{% block content %}
+<main>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <div class="container">
+    {% for task in page_obj %}
+    <article class="col-12 ">
+      <p><h5>Задача № {{ task.id }}:</h5></p>
+      <div class="col-12">
+        <div class="row">
+            <div class="col-3">
+              <li><h8>Автор задачи: {{ task.author_task }}</h8></li>
+              <p><h8>{{ task.create_date|date:"D d b H:i" }}</h8></p>
+            </div>
+            <div class="col-3">
+                {% if task.appointedperformer.performer %}
+                  <li><h8>Назначен ответственный: {{ task.appointedperformer.performer }}</h8></li>
+                  <p><h8>{{ task.appointedperformer.performer_appointed_date|date:"D d b H:i" }}</h8></p>
+                {% else %}
+                {% if user.is_authenticated %}
+                  <form id="performer_form" method="POST" action="{% url 'tasks:performer' %}">{% csrf_token %}
+                    <input type="hidden" name="task_id" value="{{ task.id }}">
+                    <div>
+                      {% for field in form_performers %}
+                      <div class="form-group">
+                          {{field.label_tag}}
+                          <div>{{field}}</div>
+                          {% if field.errors%}
+                          {% for error in field.errors %}
+                          <div class="alert alert-danger">
+                              {{error}}
+                          </div>
+                          {% endfor %}
+                          {% endif %}
+                      </div>
+                      {% endfor %}
+                      </div>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </div>
+            <div class="col-3">
+              {% if task.completedtask %}
+                <li><h8>Задача выполнена, ответственный: {{ task.appointedperformer.performer }}</h8></li>
+                <p><h8>{{ task.completedtask.task_completed_date|date:"D d b H:i" }}</h8></p>
+              {% elif task.appointedperformer %}
+                <form id="completed_form" method="POST" action="{% url 'tasks:completed' %}">{% csrf_token %}
+                  <input type="hidden" name="task_id" value="{{ task.id }}">
+                </form>
+              {% endif %}
+            </div>
+            <div class="col-3">
+              
+                {% if task.verifiedtask.reviewer %}
+                  <li><h8>Задача проверена: {{ task.verifiedtask.reviewer }}</h8></li>
+                  <p><h8>{{ task.verifiedtask.task_verified_date|date:"D d b H:i" }}</h8></p>
+                  {% elif task.completedtask %}
+                  {% if user.is_authenticated %}
+                  <form id="reviewer_form" method="POST" action="{% url 'tasks:verified' %}">{% csrf_token %}
+                    <input type="hidden" name="task_id" value="{{ task.id }}">
+                    <div>
+                      {% for field in form_reviewers %}
+                      <div class="form-group">
+                          {{field.label_tag}}
+                          <div>{{field}}</div>
+                          <div class="error">{{field.errors}}</div>
+                      </div>
+                      {% endfor %}
+                      </div>
+                  </form>
+                {% endif %}
+              {% endif %}
+            </div>
+        </div>
+          <div class="row">
+            <div class="col-3">
+              {% if user.is_authenticated %}
+                <form method="POST" action="{% url 'tasks:delete_task' %}">{% csrf_token %}
+                  <input type="hidden" name="delete_task_id" value="{{ task.id }}">
+                  <input type="submit" class="btn btn-primary" value="Удалить">
+                </form>
+              {% endif %}
+            </div>
+            {% if user.is_authenticated %}
+              {% if task.appointedperformer.performer %}    
+              <div class="col-3">
+                  <form method="POST" action="{% url 'tasks:task_performer_cancellation' %}">{% csrf_token %}
+                    <input type="hidden" name="delete" value="{{ task.id }}">
+                    <button type="submit" class="btn btn-primary" >Отменить</button>
+                  </form>
+                </div>
+              {% else %}
+              <div class="col-3">
+                <button form="performer_form" class="btn btn-primary" type="submit">Назначить</button>
+              </div>  
+              {% endif %}
+            {% endif %}
+            {% if user.is_authenticated %}
+              {% if task.completedtask %}
+              <div class="col-3">
+                <form method="POST" action="{% url 'tasks:task_completed_cancellation' %}">{% csrf_token %}
+                  <input type="hidden" name="delete" value="{{ task.id }}">
+                  <button class="btn btn-primary" type="submit">Отменить</button>
+                </form>
+              </div>
+              {% elif task.appointedperformer %}
+              <div class="col-3">
+                <button form="completed_form" class="btn btn-primary" type="submit">Выполнить</button>
+              </div> 
+              {% endif %}
+            {% endif %}
+            {% if user.is_authenticated %}
+              {% if task.verifiedtask.reviewer %}
+              <div class="col-3">
+                <form method="POST" action="{% url 'tasks:task_verified_cancellation' %}">{% csrf_token %}
+                  <input type="hidden" name="delete" value="{{ task.id }}">
+                  <button class="btn btn-primary" type="submit">Отменить</button>
+                </form>
+              </div>
+              {% elif task.completedtask %}
+              <div class="col-3">
+                <button form="reviewer_form" class="btn btn-primary" type="submit">Проверить</button>
+              </div> 
+              {% endif %}
+            {% endif %}
+          </div>
+          <div class="row">
+            <p><h6>{{ task.description }}</h6></p>
+          </div>
+      </div>
+      {% endfor %}
+      {% include 'includes/paginator.html' %}
+    </article>
+    </div>
+</main>
+{% endblock %}
